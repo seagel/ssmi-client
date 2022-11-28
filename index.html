@@ -130,28 +130,36 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
       // Listen for changes
       countySelect.addEventListener('change', (event) => {
         whereClause = event.target.value;
+        routeSelect.selectedIndex = -1;
+        routeIDSelect.selectedIndex = -1;
+        milePointStartInput.value = "";
+        milePointEndInput.value = "";
         queryIDPREFIX(view.extent);
-
       });
       routeSelect.addEventListener('change', (event) => {
         whereClause = event.target.value;
+        routeIDSelect.selectedIndex = -1;
+        milePointStartInput.value = "";
+        milePointEndInput.value = "";
         queryROUTEID(view.extent);
       })
       routeIDSelect.addEventListener('change', (event) => {
         whereClause = event.target.value;
-        // queryFeatureLayer(view.extent);
+        milePointStartInput.value = "";
+        milePointEndInput.value = "";
+        querySegment(extent);
       })
 
       milePointStartInput.addEventListener('change',(event) => {
         whereClause = event.target.value;
-        if(milePointEndInput.value != null){
+        if(milePointEndInput.value.length > 0 && milePointStartInput.value.length > 0){
           querySegment(view.extent);
         }
       })
 
       milePointEndInput.addEventListener('change',(event) => {
         whereClause = event.target.value;
-        if(milePointStartInput.value != null){
+        if(milePointStartInput.value.length > 0 && milePointEndInput.value.length > 0){
           querySegment(view.extent);
         }
       })
@@ -286,7 +294,7 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
             color: [226, 119, 40],
             outline: {
               // autocasts as new SimpleLineSymbol()
-              color: [255, 255, 255],
+              color: [136, 8, 8],
               width: 2
             }
           };
@@ -303,21 +311,21 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
           view.graphics.add(pointGraphic);
         });
         console.log(paths);
-        const polyline = {
-          type: "polyline",
-          paths: paths
-        };
-        const simpleLineSymbol = {
-          type: "simple-line",
-          color: [226, 119, 40], // Orange
-          width: 2
-        };
-
-        const polylineGraphic = new Graphic({
-          geometry: polyline,
-          symbol: simpleLineSymbol
-        });
-        view.graphics.add(polylineGraphic);
+        // const polyline = {
+        //   type: "polyline",
+        //   paths: paths
+        // };
+        // const simpleLineSymbol = {
+        //   type: "simple-line",
+        //   color: [226, 119, 40], // Orange
+        //   width: 2
+        // };
+        //
+        // const polylineGraphic = new Graphic({
+        //   geometry: polyline,
+        //   symbol: simpleLineSymbol
+        // });
+        // view.graphics.add(polylineGraphic);
         view.goTo(view.graphics,{zoom : 12});
 
 
