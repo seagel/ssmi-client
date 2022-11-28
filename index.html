@@ -114,9 +114,9 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
       //   option.value = query;
       //   select.appendChild(option);
       // });
-      const roadNameSelect = document.createElement("select", "");
-      roadNameSelect.setAttribute("class", "esri-widget esri-select");
-      roadNameSelect.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
+      const routeIDSelect = document.createElement("select", "");
+      routeIDSelect.setAttribute("class", "esri-widget esri-select");
+      routeIDSelect.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
 
       const milePointStartInput = document.createElement("input", "");
       milePointStartInput.setAttribute("class", "esri-widget esri-input");
@@ -135,9 +135,9 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
       });
       routeSelect.addEventListener('change', (event) => {
         whereClause = event.target.value;
-        queryROADNAME(view.extent);
+        queryROUTEID(view.extent);
       })
-      roadNameSelect.addEventListener('change', (event) => {
+      routeIDSelect.addEventListener('change', (event) => {
         whereClause = event.target.value;
         // queryFeatureLayer(view.extent);
       })
@@ -198,13 +198,13 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
       //     routeSelect.appendChild(option);
       //   });
 
-        // for(const feature in results.features){
-        //   console.log(results.features[feature].attributes.COUNTY)
-        // }
-        // console.log(results.features[0].attributes.COUNTY);
+      // for(const feature in results.features){
+      //   console.log(results.features[feature].attributes.COUNTY)
+      // }
+      // console.log(results.features[0].attributes.COUNTY);
       view.ui.add(countySelect, "top-right",'COUNTY');
       view.ui.add(routeSelect, "top-right");
-      view.ui.add(roadNameSelect, "top-right");
+      view.ui.add(routeIDSelect, "top-right");
       view.ui.add(milePointStartInput,"top-right");
       view.ui.add(milePointEndInput,"top-right");
       async function queryIDPREFIX(extent) {
@@ -227,31 +227,30 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
         // console.log(results);
       }
 
-      async function queryROADNAME(extent) {
+      async function queryROUTEID(extent) {
 
         const parcelQuery = {
           where: countySelect.value+' and '+ routeSelect.value,  // Set by select element
           spatialRelationship: "intersects", // Relationship operation to apply
           // geometry: extent, // Restricted to visible extent of the map
-          outFields: ["ROAD_NAME"], // Attributes to return
+          outFields: ["ID_RTE_NO"], // Attributes to return
           returnGeometry: false,
           returnDistinctValues: true
         };
         const results = await parcelLayer.queryFeatures(parcelQuery)
         results.features.forEach(function (feature) {
           let option = document.createElement("option");
-          option.innerHTML = feature.attributes.ROAD_NAME;
-          option.value = 'ROAD_NAME= \'' + feature.attributes.ROAD_NAME + '\'';
-          roadNameSelect.appendChild(option);
+          option.innerHTML = feature.attributes.ID_RTE_NO;
+          option.value = 'ID_RTE_NO= \'' + feature.attributes.ID_RTE_NO + '\'';
+          routeIDSelect.appendChild(option);
         });
         // console.log(results);
       }
 
       async function querySegment(extent) {
-        parcelLayer.definitionExpression = countySelect.value+' and '+ routeSelect.value + ' and ' + roadNameSelect.value;
         const parcelQuery = {
-          where: countySelect.value+' and '+ routeSelect.value + ' and ' + roadNameSelect.value + 'and ID_MP >='
-            + milePointStartInput.value + ' and ID_MP <=' + milePointEndInput.value ,  // Set by select element
+          where: countySelect.value+' and '+ routeSelect.value + ' and ' + routeIDSelect.value + 'and ID_MP >='
+                  + milePointStartInput.value + ' and ID_MP <=' + milePointEndInput.value ,  // Set by select element
           spatialRelationship: "intersects", // Relationship operation to apply
           // geometry: extent, // Restricted to visible extent of the map
           outFields: ["*"], // Attributes to return
@@ -263,7 +262,7 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
         //   let option = document.createElement("option");
         //   option.innerHTML = feature.attributes.ROAD_NAME;
         //   option.value = 'ROAD_NAME=' + feature.attributes.ROAD_NAME;
-        //   roadNameSelect.appendChild(option);
+        //   routeIDSelect.appendChild(option);
         // });
         // console.log(results);
       }
@@ -271,16 +270,17 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
       function displayResults(results) {
         //Create a blue polygon
         view.graphics.removeAll();
+        paths = [];
         results.features.forEach((feature) => {
           console.log(feature.attributes.LATITUDE,feature.attributes.LONGITUDE);
+          paths.push([feature.attributes.LONGITUDE,feature.attributes.LATITUDE]);
           const point = {
             type: "point", // autocasts as new Point()
             longitude: feature.attributes.LONGITUDE,
             latitude: feature.attributes.LATITUDE
           };
-          // map.centerAndZoom(point,15)
-
-          // Create a symbol for drawing the point
+          //
+          // // Create a symbol for drawing the point
           const markerSymbol = {
             type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
             color: [226, 119, 40],
@@ -290,11 +290,11 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
               width: 2
             }
           };
-           const popupTemplate = {
-             title: "RoadName {feature.attributes.ROAD_NAME}",
-             content: `County: ${feature.attributes.COUNTY} <br> ID_PREFIX: ${feature.attributes.ID_PREFIX} <br> ROAD_NAME: ${feature.attributes.ROAD_NAME}`
-           };
-          // Create a graphic and add the geometry and symbol to it
+          const popupTemplate = {
+            title: "RoadName {feature.attributes.ROAD_NAME}",
+            content: `County: ${feature.attributes.COUNTY} <br> ID_PREFIX: ${feature.attributes.ID_PREFIX} <br> ROUTE_NO: ${feature.attributes.ID_RTE_NO} <br> Mile Point :${feature.attributes.ID_MP} `
+          };
+          // // Create a graphic and add the geometry and symbol to it
           const pointGraphic = new Graphic({
             geometry: point,
             symbol: markerSymbol,
@@ -302,33 +302,51 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
           });
           view.graphics.add(pointGraphic);
         });
+        console.log(paths);
+        const polyline = {
+          type: "polyline",
+          paths: paths
+        };
+        const simpleLineSymbol = {
+          type: "simple-line",
+          color: [226, 119, 40], // Orange
+          width: 2
+        };
 
-       //  const symbol = {
-       //    type: "simple-fill",
-       //    color: [20, 130, 200, 0.5],
-       //    outline: {
-       //      color: "white",
-       //      width: .5
-       //    },
-       //  };
-       //
-       //  const popupTemplate = {
-       //    title: "Parcel {ROAD_NAME}",
-       //    content: "County: {COUNTY} <br> ID_PREFIX: {ID_PREFIX} <br> ROAD_NAME: {ROAD_NAME}"
-       //  };
-       //
-       //  // Assign styles and popup to features
-       //  results.features.map((feature) => {
-       //    feature.symbol = symbol;
-       //    feature.popupTemplate = popupTemplate;
-       //    return feature;
-       //  });
-       //
-       // // Clear display
-       //  view.popup.close();
-       //  view.graphics.removeAll();
-       //  // Add features to graphics layer
-       //  view.graphics.addMany(results.features);
+        const polylineGraphic = new Graphic({
+          geometry: polyline,
+          symbol: simpleLineSymbol
+        });
+        view.graphics.add(polylineGraphic);
+        view.goTo(view.graphics,{zoom : 12});
+
+
+        //  const symbol = {
+        //    type: "simple-fill",
+        //    color: [20, 130, 200, 0.5],
+        //    outline: {
+        //      color: "white",
+        //      width: .5
+        //    },
+        //  };
+        //
+        //  const popupTemplate = {
+        //    title: "Parcel {ROAD_NAME}",
+        //    content: "County: {COUNTY} <br> ID_PREFIX: {ID_PREFIX} <br> ROAD_NAME: {ROAD_NAME}"
+        //  };
+        //
+        //  // Assign styles and popup to features
+        //  results.features.map((feature) => {
+        //    feature.symbol = symbol;
+        //    feature.popupTemplate = popupTemplate;
+        //    return feature;
+        //  });
+        //
+        // // Clear display
+        //  view.popup.close();
+        //  view.graphics.removeAll();
+        //  // Add features to graphics layer
+        //  view.graphics.addMany(results.features);
       }
     });
 
