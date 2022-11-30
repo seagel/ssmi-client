@@ -249,7 +249,7 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
         results.features.forEach(function (feature) {
           let option = document.createElement("option");
           option.innerHTML = feature.attributes.ID_RTE_NO;
-          option.value = 'ID_RTE_NO= \'' + feature.attributes.ID_RTE_NO + '\'';
+          option.value = 'ID_RTE_NO=' + feature.attributes.ID_RTE_NO;
           routeIDSelect.appendChild(option);
         });
         // console.log(results);
@@ -257,8 +257,8 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
 
       async function querySegment(extent) {
         const parcelQuery = {
-          where: countySelect.value+' and '+ routeSelect.value + ' and ' + routeIDSelect.value + 'and ID_MP >='
-                  + milePointStartInput.value + ' and ID_MP <=' + milePointEndInput.value ,  // Set by select element
+          where: countySelect.value+' and '+ routeSelect.value + ' and ' + routeIDSelect.value + ' and ID_MP >='
+                  + milePointStartInput.value + ' and ID_MP <=' + milePointEndInput.value + ' and MAIN_LINE = 1 and (MP_DIRECTION = \'E\' or MP_DIRECTION = \'N\' or MP_DIRECTION = null)',
           spatialRelationship: "intersects", // Relationship operation to apply
           // geometry: extent, // Restricted to visible extent of the map
           outFields: ["*"], // Attributes to return
@@ -281,7 +281,6 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
         paths = [];
         results.features.forEach((feature) => {
           console.log(feature.attributes.LATITUDE,feature.attributes.LONGITUDE);
-          paths.push([feature.attributes.LONGITUDE,feature.attributes.LATITUDE]);
           const point = {
             type: "point", // autocasts as new Point()
             longitude: feature.attributes.LONGITUDE,
@@ -308,24 +307,30 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
             symbol: markerSymbol,
             popupTemplate:popupTemplate
           });
-          view.graphics.add(pointGraphic);
+          // view.graphics.add(pointGraphic);
+          paths.push([feature.attributes.LONGITUDE,feature.attributes.LATITUDE]);
         });
         console.log(paths);
-        // const polyline = {
-        //   type: "polyline",
-        //   paths: paths
-        // };
-        // const simpleLineSymbol = {
-        //   type: "simple-line",
-        //   color: [226, 119, 40], // Orange
-        //   width: 2
-        // };
-        //
-        // const polylineGraphic = new Graphic({
-        //   geometry: polyline,
-        //   symbol: simpleLineSymbol
-        // });
-        // view.graphics.add(polylineGraphic);
+        const polyline = {
+          type: "polyline",
+          paths: paths
+        };
+        const simpleLineSymbol = {
+          type: "simple-line",
+          color: [226, 119, 40], // Orange
+          width: 2
+        };
+        const popupTemplate = {
+          title: "Segment",
+          content: `County: ${countySelect.value} <br> ID_PREFIX: ${routeIDSelect.value} <br> ROUTE_NO: ${routeSelect.value} <br> Mile Point Start :${milePointStartInput.value} <br> Mile Point End :${milePointEndInput.value} `
+        };
+        const polylineGraphic = new Graphic({
+          geometry: polyline,
+          symbol: simpleLineSymbol,
+          popupTemplate: popupTemplate
+
+        });
+        view.graphics.add(polylineGraphic);
         view.goTo(view.graphics,{zoom : 12});
 
 
