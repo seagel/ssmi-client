@@ -10,365 +10,548 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
 
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>ArcGIS API for JavaScript Tutorials: Query a feature layer (SQL)</title>
-  <style>
-    html, body, #viewDiv {
-      padding: 0;
-      margin: 0;
-      height: 100%;
-      width: 100%;
-    }
-
-    .esri-ui-corner .esri-component.esri-widget--panel {
-      width: 200px !important;
-    }
-  </style>
-  <link rel="stylesheet" href="https://js.arcgis.com/4.25/esri/themes/light/main.css">
-  <script src="https://js.arcgis.com/4.25/"></script>
-  <script>
-
-    require([
-      "esri/config",
-      "esri/Map",
-      "esri/views/MapView",
-      "esri/layers/FeatureLayer",
-      "esri/Graphic"
-    ], function (esriConfig, Map, MapView, FeatureLayer,Graphic) {
-
-      esriConfig.apiKey = "AAPK01f0669adf534958a616329811ad2bfelCCLGf0vvbNLyN1yo6yZfICfzSuBrXVe_PGcvekcs0iUBOdSMPHV8mLTZo7BS2WT";
-
-      const map = new Map({
-        basemap: "arcgis-topographic" //Basemap layer service
-      });
-
-      const view = new MapView({
-        container: "viewDiv",
-        map: map,
-        center: [-76.6413, 39.0458], //Longitude, latitude
-        zoom: 10
-      });
-
-      const countyMap = {
-        '1': 'Allegany',
-        '2':'Anne Arundel',
-        '3':'Baltimore City',
-        '4':'Baltimore',
-        '5':'Calvert',
-        '6':'Caroline',
-        '7':'Carroll',
-        '8':'Cecil',
-        '9':'Charles',
-        '10':'Dorchester',
-        '11':'Frederick',
-        '12':'Garrett',
-        '13':'Harford',
-        '14':'Howard',
-        '15':'Kent',
-        '16':'Montgomery',
-        '17':'Prince George\'s',
-        '18':'Queen Anne\'s',
-        '19':'Saint Mary\'s',
-        '20':'Somerset',
-        '21':'Talbot',
-        '22':'Washington',
-        '23':'Wicomico',
-        '24':'Worcester'
-      }
-
-      // SQL query array
-      // const parcelLayerSQL = ["Choose a SQL where clause...", "UseType = 'Residential'",  "UseType = 'Government'", "UseType = 'Irrigated Farm'", "TaxRateArea = 10853", "TaxRateArea = 10860", "TaxRateArea = 08637", "Roll_LandValue > 1000000", "Roll_LandValue < 1000000"];
-      // let whereClause = parcelLayerSQL[0];
-
-      // const countiesSelect = document.createElement("select","")
-      // countiesSelect.setAttribute("class", "esri-widget esri-select");
-      // countiesSelect.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
-      // countiesSelect.addEventListener('change',(event) => {
-      //   whereClause = event.target.value;
-      //   queryCounty(view.extent);
-      // })
-
-      // function queryCounty(extent) {
-      //   const countyQuery = {
-      //     where: whereClause,  // Set by select element
-      //     spatialRelationship: "intersects", // Relationship operation to apply
-      //     geometry: extent, // Restricted to visible extent of the map
-      //     outFields: ["County"], // Attributes to return
-      //     returnGeometry: false,
-      //     returnDistinctValues: true
-      //   };
-      // }
-
-      // Add SQL UI
-      const countySelect = document.createElement("select", "");
-      countySelect.setAttribute("class", "esri-widget esri-select");
-      countySelect.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
-
-      const routeSelect = document.createElement("select", "");
-      routeSelect.setAttribute("class", "esri-widget esri-select");
-      routeSelect.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
-      // parcelLayerSQL.forEach(function(query){
-      //   let option = document.createElement("option");
-      //   option.innerHTML = query;
-      //   option.value = query;
-      //   select.appendChild(option);
-      // });
-      const routeIDSelect = document.createElement("select", "");
-      routeIDSelect.setAttribute("class", "esri-widget esri-select");
-      routeIDSelect.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
-
-      const milePointStartInput = document.createElement("input", "");
-      milePointStartInput.setAttribute("class", "esri-widget esri-input");
-      milePointStartInput.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
-
-      const milePointEndInput = document.createElement("input", "");
-      milePointEndInput.setAttribute("class", "esri-widget esri-input");
-      milePointEndInput.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
-
-
-      // Listen for changes
-      countySelect.addEventListener('change', (event) => {
-        whereClause = event.target.value;
-        routeSelect.selectedIndex = -1;
-        routeIDSelect.selectedIndex = -1;
-        milePointStartInput.value = "";
-        milePointEndInput.value = "";
-        queryIDPREFIX(view.extent);
-      });
-      routeSelect.addEventListener('change', (event) => {
-        whereClause = event.target.value;
-        routeIDSelect.selectedIndex = -1;
-        milePointStartInput.value = "";
-        milePointEndInput.value = "";
-        queryROUTEID(view.extent);
-      })
-      routeIDSelect.addEventListener('change', (event) => {
-        whereClause = event.target.value;
-        milePointStartInput.value = "";
-        milePointEndInput.value = "";
-        querySegment(extent);
-      })
-
-      milePointStartInput.addEventListener('change',(event) => {
-        whereClause = event.target.value;
-        if(milePointEndInput.value.length > 0 && milePointStartInput.value.length > 0){
-          querySegment(view.extent);
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>ArcGIS API for JavaScript Tutorials: Query a feature layer (SQL)</title>
+    <style>
+        html, body, #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
         }
-      })
 
-      milePointEndInput.addEventListener('change',(event) => {
-        whereClause = event.target.value;
-        if(milePointStartInput.value.length > 0 && milePointEndInput.value.length > 0){
-          querySegment(view.extent);
+        .esri-ui-corner .esri-component.esri-widget--panel {
+            width: 200px !important;
         }
-      })
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.25/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.25/"></script>
+    <script>
 
-      // Get query layer and set up query
-      const parcelLayer = new FeatureLayer({
-        url: "https://maps.roads.maryland.gov/arcgis/rest/services/Milepoints/Milepoints_Maryland_MDOTSHA/MapServer/1",
-        outFields : ["*"]
-      });
-      map.add(parcelLayer)
-      parcelLayer.queryFeatures({
-        where: "1=1",  // Set by select element
-        spatialRelationship: "intersects", // Relationship operation to apply
-        // geometry: view.extent, // Restricted to visible extent of the map
-        outFields: ["COUNTY"], // Attributes to return
-        returnGeometry: false,
-        returnDistinctValues: true,
-      }).then((results) => {
-        results.features.forEach(function (feature) {
-          let option = document.createElement("option");
-          option.innerHTML = countyMap[feature.attributes.COUNTY];
-          option.value = 'COUNTY=' + feature.attributes.COUNTY;
-          countySelect.appendChild(option);
-        });
+        require([
+            "esri/config",
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/FeatureLayer",
+            "esri/Graphic"
+        ], function (esriConfig, Map, MapView, FeatureLayer, Graphic) {
 
-        // for(const feature in results.features){
-        //   console.log(results.features[feature].attributes.COUNTY)
-        // }
-        // console.log(results.features[0].attributes.COUNTY);
-      });
+            esriConfig.apiKey = "AAPK01f0669adf534958a616329811ad2bfelCCLGf0vvbNLyN1yo6yZfICfzSuBrXVe_PGcvekcs0iUBOdSMPHV8mLTZo7BS2WT";
 
-      // parcelLayer.queryFeatures({
-      //   where: "1=1",  // Set by select element
-      //   spatialRelationship: "intersects", // Relationship operation to apply
-      //   geometry: view.extent, // Restricted to visible extent of the map
-      //   outFields: ["ID_PREFIX"], // Attributes to return
-      //   returnGeometry: false,
-      //   returnDistinctValues: true,
-      // }).then((results) => {
-      //   results.features.forEach(function (feature) {
-      //     let option = document.createElement("option");
-      //     option.innerHTML = feature.attributes.ID_PREFIX;
-      //     option.value = 'COUNTY=' + feature.attributes.ID_PREFIX;
-      //     routeSelect.appendChild(option);
-      //   });
+            const map = new Map({
+                basemap: "arcgis-topographic" //Basemap layer service
+            });
 
-      // for(const feature in results.features){
-      //   console.log(results.features[feature].attributes.COUNTY)
-      // }
-      // console.log(results.features[0].attributes.COUNTY);
-      view.ui.add(countySelect, "top-right",'COUNTY');
-      view.ui.add(routeSelect, "top-right");
-      view.ui.add(routeIDSelect, "top-right");
-      view.ui.add(milePointStartInput,"top-right");
-      view.ui.add(milePointEndInput,"top-right");
-      async function queryIDPREFIX(extent) {
+            const view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [-76.6413, 39.0458], //Longitude, latitude
+                zoom: 10
+            });
 
-        const parcelQuery = {
-          where: countySelect.value,  // Set by select element
-          spatialRelationship: "intersects", // Relationship operation to apply
-          // geometry: extent, // Restricted to visible extent of the map
-          outFields: ["ID_PREFIX"], // Attributes to return
-          returnGeometry: false,
-          returnDistinctValues: true
-        };
-        const results = await parcelLayer.queryFeatures(parcelQuery)
-        results.features.forEach(function (feature) {
-          let option = document.createElement("option");
-          option.innerHTML = feature.attributes.ID_PREFIX;
-          option.value = 'ID_PREFIX= \'' +feature.attributes.ID_PREFIX + '\'';
-          routeSelect.appendChild(option);
-        });
-        // console.log(results);
-      }
-
-      async function queryROUTEID(extent) {
-
-        const parcelQuery = {
-          where: countySelect.value+' and '+ routeSelect.value,  // Set by select element
-          spatialRelationship: "intersects", // Relationship operation to apply
-          // geometry: extent, // Restricted to visible extent of the map
-          outFields: ["ID_RTE_NO"], // Attributes to return
-          returnGeometry: false,
-          returnDistinctValues: true
-        };
-        const results = await parcelLayer.queryFeatures(parcelQuery)
-        results.features.forEach(function (feature) {
-          let option = document.createElement("option");
-          option.innerHTML = feature.attributes.ID_RTE_NO;
-          option.value = 'ID_RTE_NO=' + feature.attributes.ID_RTE_NO;
-          routeIDSelect.appendChild(option);
-        });
-        // console.log(results);
-      }
-
-      async function querySegment(extent) {
-        const parcelQuery = {
-          where: countySelect.value+' and '+ routeSelect.value + ' and ' + routeIDSelect.value + ' and ID_MP >='
-                  + milePointStartInput.value + ' and ID_MP <=' + milePointEndInput.value + ' and MAIN_LINE = 1 and (MP_DIRECTION = \'E\' or MP_DIRECTION = \'N\' or MP_DIRECTION = null)',
-          spatialRelationship: "intersects", // Relationship operation to apply
-          // geometry: extent, // Restricted to visible extent of the map
-          outFields: ["*"], // Attributes to return
-          returnGeometry: true,
-        };
-        const results = await parcelLayer.queryFeatures(parcelQuery)
-        displayResults(results);
-        // results.features.forEach(function (feature) {
-        //   let option = document.createElement("option");
-        //   option.innerHTML = feature.attributes.ROAD_NAME;
-        //   option.value = 'ROAD_NAME=' + feature.attributes.ROAD_NAME;
-        //   routeIDSelect.appendChild(option);
-        // });
-        // console.log(results);
-      }
-
-      function displayResults(results) {
-        //Create a blue polygon
-        view.graphics.removeAll();
-        paths = [];
-        results.features.forEach((feature) => {
-          console.log(feature.attributes.LATITUDE,feature.attributes.LONGITUDE);
-          const point = {
-            type: "point", // autocasts as new Point()
-            longitude: feature.attributes.LONGITUDE,
-            latitude: feature.attributes.LATITUDE
-          };
-          //
-          // // Create a symbol for drawing the point
-          const markerSymbol = {
-            type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
-            color: [226, 119, 40],
-            outline: {
-              // autocasts as new SimpleLineSymbol()
-              color: [136, 8, 8],
-              width: 2
+            const countyMap = {
+                '1': 'Allegany',
+                '2': 'Anne Arundel',
+                '3': 'Baltimore City',
+                '4': 'Calvert',
+                '5': 'Caroline',
+                '6': 'Carroll',
+                '7': 'Cecil',
+                '8': 'Charles',
+                '9': 'Dorchester',
+                '10': 'Frederick',
+                '11': 'Garrett',
+                '12': 'Harford',
+                '13': 'Howard',
+                '14': 'Kent',
+                '15': 'Montgomery',
+                '16': 'Prince George\'s',
+                '17': 'Queen Anne\'s',
+                '18': 'Saint Mary\'s',
+                '19': 'Somerset',
+                '20': 'Talbot',
+                '21': 'Washington',
+                '22': 'Wicomico',
+                '23': 'Worcester',
+                '24': 'Baltimore',
             }
-          };
-          const popupTemplate = {
-            title: "RoadName {feature.attributes.ROAD_NAME}",
-            content: `County: ${feature.attributes.COUNTY} <br> ID_PREFIX: ${feature.attributes.ID_PREFIX} <br> ROUTE_NO: ${feature.attributes.ID_RTE_NO} <br> Mile Point :${feature.attributes.ID_MP} `
-          };
-          // // Create a graphic and add the geometry and symbol to it
-          const pointGraphic = new Graphic({
-            geometry: point,
-            symbol: markerSymbol,
-            popupTemplate:popupTemplate
-          });
-          // view.graphics.add(pointGraphic);
-          paths.push([feature.attributes.LONGITUDE,feature.attributes.LATITUDE]);
+
+            const countyMapReverse = {
+                "Allegany": 1,
+                "Anne Arundel": 2,
+                "Baltimore": 3,
+                "Calvert": 4,
+                "Caroline": 5,
+                "Carroll": 6,
+                "Cecil": 7,
+                "Charles": 8,
+                "Dorchester": 9,
+                "Frederick": 10,
+                "Garrett": 11,
+                "Harford": 12,
+                "Howard": 13,
+                "Kent": 14,
+                "Montgomery": 15,
+                "Prince George's": 16,
+                "Queen Anne's": 17,
+                "St. Mary's": 18,
+                "Somerset": 19,
+                "Talbot": 20,
+                "Washington": 21,
+                "Wicomico": 22,
+                "Worcester": 23,
+                "Baltimore City": 24,
+                "Unknown": 99
+            }
+
+            // SQL query array
+            // const parcelLayerSQL = ["Choose a SQL where clause...", "UseType = 'Residential'",  "UseType = 'Government'", "UseType = 'Irrigated Farm'", "TaxRateArea = 10853", "TaxRateArea = 10860", "TaxRateArea = 08637", "Roll_LandValue > 1000000", "Roll_LandValue < 1000000"];
+            // let whereClause = parcelLayerSQL[0];
+
+            // const countiesSelect = document.createElement("select","")
+            // countiesSelect.setAttribute("class", "esri-widget esri-select");
+            // countiesSelect.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
+            // countiesSelect.addEventListener('change',(event) => {
+            //   whereClause = event.target.value;
+            //   queryCounty(view.extent);
+            // })
+
+            // function queryCounty(extent) {
+            //   const countyQuery = {
+            //     where: whereClause,  // Set by select element
+            //     spatialRelationship: "intersects", // Relationship operation to apply
+            //     geometry: extent, // Restricted to visible extent of the map
+            //     outFields: ["County"], // Attributes to return
+            //     returnGeometry: false,
+            //     returnDistinctValues: true
+            //   };
+            // }
+
+            // Add SQL UI
+            const countySelect = document.createElement("select", "");
+            countySelect.setAttribute("class", "esri-widget esri-select");
+            countySelect.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
+
+            const routeSelect = document.createElement("select", "");
+            routeSelect.setAttribute("class", "esri-widget esri-select");
+            routeSelect.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
+            // parcelLayerSQL.forEach(function(query){
+            //   let option = document.createElement("option");
+            //   option.innerHTML = query;
+            //   option.value = query;
+            //   select.appendChild(option);
+            // });
+            const routeIDSelect = document.createElement("select", "");
+            routeIDSelect.setAttribute("class", "esri-widget esri-select");
+            routeIDSelect.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
+
+            const milePointStartInput = document.createElement("input", "");
+            milePointStartInput.setAttribute("class", "esri-widget esri-input");
+            milePointStartInput.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
+
+            const milePointEndInput = document.createElement("input", "");
+            milePointEndInput.setAttribute("class", "esri-widget esri-input");
+            milePointEndInput.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
+
+
+            // Listen for changes
+            countySelect.addEventListener('change', (event) => {
+                whereClause = event.target.value;
+                routeSelect.selectedIndex = -1;
+                routeIDSelect.selectedIndex = -1;
+                milePointStartInput.value = "";
+                milePointEndInput.value = "";
+                queryIDPREFIX(view.extent);
+            });
+            routeSelect.addEventListener('change', (event) => {
+                whereClause = event.target.value;
+                routeIDSelect.selectedIndex = -1;
+                milePointStartInput.value = "";
+                milePointEndInput.value = "";
+                queryROUTEID(view.extent);
+            })
+            routeIDSelect.addEventListener('change', (event) => {
+                whereClause = event.target.value;
+                milePointStartInput.value = "";
+                milePointEndInput.value = "";
+                querySegment(extent);
+            })
+
+            milePointStartInput.addEventListener('change', (event) => {
+                whereClause = event.target.value;
+                if (milePointEndInput.value.length > 0 && milePointStartInput.value.length > 0) {
+                    querySegment(view.extent);
+                }
+            })
+
+            milePointEndInput.addEventListener('change', (event) => {
+                whereClause = event.target.value;
+                if (milePointStartInput.value.length > 0 && milePointEndInput.value.length > 0) {
+                    querySegment(view.extent);
+                }
+            })
+
+            // Get query layer and set up query
+            const parcelLayer = new FeatureLayer({
+                url: "https://maps.roads.maryland.gov/arcgis/rest/services/Milepoints/Milepoints_Maryland_MDOTSHA/MapServer/1",
+                outFields: ["*"]
+            });
+            map.add(parcelLayer)
+            // for (let key in countyMap) {
+            //     let option = document.createElement("option");
+            //     option.innerHTML = countyMap[key];
+            //     option.value = 'COUNTY=' + key;
+            //     countySelect.appendChild(option);
+            // }
+            // parcelLayer.queryFeatures({
+            //     where: "1=1",  // Set by select element
+            //     spatialRelationship: "intersects", // Relationship operation to apply
+            //     // geometry: view.extent, // Restricted to visible extent of the map
+            //     outFields: ["COUNTY"], // Attributes to return
+            //     returnGeometry: false,
+            //     returnDistinctValues: true,
+            // }).then((results) => {
+            //     results.features.forEach(function (feature) {
+            //         let option = document.createElement("option");
+            //         option.innerHTML = countyMap[feature.attributes.COUNTY];
+            //         option.value = 'COUNTY=' + feature.attributes.COUNTY;
+            //         countySelect.appendChild(option);
+            //     });
+            // });
+
+          // parcelLayer.queryFeatures({
+            //   where: "1=1",  // Set by select element
+            //   spatialRelationship: "intersects", // Relationship operation to apply
+            //   geometry: view.extent, // Restricted to visible extent of the map
+            //   outFields: ["ID_PREFIX"], // Attributes to return
+            //   returnGeometry: false,
+            //   returnDistinctValues: true,
+            // }).then((results) => {
+            //   results.features.forEach(function (feature) {
+            //     let option = document.createElement("option");
+            //     option.innerHTML = feature.attributes.ID_PREFIX;
+            //     option.value = 'COUNTY=' + feature.attributes.ID_PREFIX;
+            //     routeSelect.appendChild(option);
+            //   });
+
+            // for(const feature in results.features){
+            //   console.log(results.features[feature].attributes.COUNTY)
+            // }
+            // console.log(results.features[0].attributes.COUNTY);
+            view.ui.add(countySelect, "top-right", 'COUNTY');
+            view.ui.add(routeSelect, "top-right");
+            view.ui.add(routeIDSelect, "top-right");
+            view.ui.add(milePointStartInput, "top-right");
+            view.ui.add(milePointEndInput, "top-right");
+            queryMultipleSegments();
+
+          function delay(milliseconds){
+            return new Promise(resolve => {
+              setTimeout(resolve, milliseconds);
+            });
+          }
+
+          async function queryIDPREFIX(extent) {
+
+                const parcelQuery = {
+                    where: countySelect.value,  // Set by select element
+                    spatialRelationship: "intersects", // Relationship operation to apply
+                    // geometry: extent, // Restricted to visible extent of the map
+                    outFields: ["ID_PREFIX"], // Attributes to return
+                    returnGeometry: false,
+                    returnDistinctValues: true
+                };
+                const results = await parcelLayer.queryFeatures(parcelQuery)
+                results.features.forEach(function (feature) {
+                    let option = document.createElement("option");
+                    option.innerHTML = feature.attributes.ID_PREFIX;
+                    option.value = 'ID_PREFIX= \'' + feature.attributes.ID_PREFIX + '\'';
+                    routeSelect.appendChild(option);
+                });
+                // console.log(results);
+            }
+
+            async function queryROUTEID(extent) {
+
+                const parcelQuery = {
+                    where: countySelect.value + ' and ' + routeSelect.value,  // Set by select element
+                    spatialRelationship: "intersects", // Relationship operation to apply
+                    // geometry: extent, // Restricted to visible extent of the map
+                    outFields: ["ID_RTE_NO"], // Attributes to return
+                    returnGeometry: false,
+                    returnDistinctValues: true
+                };
+                const results = await parcelLayer.queryFeatures(parcelQuery)
+                results.features.forEach(function (feature) {
+                    let option = document.createElement("option");
+                    option.innerHTML = feature.attributes.ID_RTE_NO;
+                    option.value = 'ID_RTE_NO=' + feature.attributes.ID_RTE_NO;
+                    routeIDSelect.appendChild(option);
+                });
+                // console.log(results);
+            }
+
+            async function queryMultipleSegments() {
+                const data = [  {
+                    "route_type": "MD",
+                    "route_number": "2",
+                    "from_milepoint": "2.480",
+                    "to_milepoint": "13.232",
+                    "length": "10.752",
+                    "county": "Anne Arundel"
+                },  {
+                    "route_type": "MD",
+                    "route_number": "5",
+                    "from_milepoint": "19.630",
+                    "to_milepoint": "38.587",
+                    "length": "18.957",
+                    "county": "St. Mary's"
+                }, {
+                    "route_type": "MD",
+                    "route_number": "6",
+                    "from_milepoint": "22.950",
+                    "to_milepoint": "37.030",
+                    "length": "14.080",
+                    "county": "Charles"
+                }, {
+                    "route_type": "MD",
+                    "route_number": "6",
+                    "from_milepoint": "0.050",
+                    "to_milepoint": "1.240",
+                    "length": "1.190",
+                    "county": "St. Mary's"
+                }, {
+                    "route_type": "MD",
+                    "route_number": "8",
+                    "from_milepoint": "2.470",
+                    "to_milepoint": "4.725",
+                    "length": "2.255",
+                    "county": "Queen Anne's"
+                }, {
+                    "route_type": "MD",
+                    "route_number": "12",
+                    "from_milepoint": "15.300",
+                    "to_milepoint": "15.440",
+                    "length": "0.140",
+                    "county": "Worcester"
+                }, {
+                    "route_type": "US",
+                    "route_number": "13",
+                    "from_milepoint": "0.120",
+                    "to_milepoint": "0.500",
+                    "length": "0.380",
+                    "county": "Somerset"
+                }, {
+                    "route_type": "US",
+                    "route_number": "15",
+                    "from_milepoint": "4.120",
+                    "to_milepoint": "6.172",
+                    "length": "2.052",
+                    "county": "Frederick"
+                }, {
+                    "route_type": "MD",
+                    "route_number": "16",
+                    "from_milepoint": "20.180",
+                    "to_milepoint": "23.790",
+                    "length": "3.610",
+                    "county": "Dorchester"
+                }, {
+                    "route_type": "MD",
+                    "route_number": "17",
+                    "from_milepoint": "19.020",
+                    "to_milepoint": "19.106",
+                    "length": "0.086",
+                    "county": "Frederick"
+                }, {
+                    "route_type": "MD",
+                    "route_number": "22",
+                    "from_milepoint": "5.776",
+                    "to_milepoint": "9.201",
+                    "length": "3.425",
+                    "county": "Harford"
+                }];
+
+                for (const entry of data) {
+                  const parcelQuery = {
+                    where: 'COUNTY=' + countyMapReverse[entry.county] + ' and ID_PREFIX= \'' + entry.route_type + '\' and ID_RTE_NO = ' + parseInt(entry.route_number) + ' and ID_MP >='
+                            + parseInt(entry.from_milepoint) + ' and ID_MP <=' + parseInt(entry.to_milepoint) + ' and MAIN_LINE = 1 and (MP_DIRECTION = \'E\' or MP_DIRECTION = \'N\' or MP_DIRECTION = null)',
+                    spatialRelationship: "intersects", // Relationship operation to apply
+                    // geometry: extent, // Restricted to visible extent of the map
+                    outFields: ["*"], // Attributes to return
+                    returnGeometry: true,
+                  };
+                  const results = await parcelLayer.queryFeatures(parcelQuery);
+                  // displayResults(results,false)
+                    paths = [];
+                    results.features.forEach((feature) => {
+                        // console.log(feature.attributes.LATITUDE, feature.attributes.LONGITUDE);
+                        // const point = {
+                        //     type: "point", // autocasts as new Point()
+                        //     longitude: feature.attributes.LONGITUDE,
+                        //     latitude: feature.attributes.LATITUDE
+                        // };
+                        // //
+                        // // // Create a symbol for drawing the point
+                        // const markerSymbol = {
+                        //     type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                        //     color: [226, 119, 40],
+                        //     outline: {
+                        //         // autocasts as new SimpleLineSymbol()
+                        //         color: [136, 8, 8],
+                        //         width: 2
+                        //     }
+                        // };
+                        // const popupTemplate = {
+                        //     title: "RoadName {feature.attributes.ROAD_NAME}",
+                        //     content: `County: ${feature.attributes.COUNTY} <br> ID_PREFIX: ${feature.attributes.ID_PREFIX} <br> ROUTE_NO: ${feature.attributes.ID_RTE_NO} <br> Mile Point :${feature.attributes.ID_MP} `
+                        // };
+                        // // // Create a graphic and add the geometry and symbol to it
+                        // const pointGraphic = new Graphic({
+                        //     geometry: point,
+                        //     symbol: markerSymbol,
+                        //     popupTemplate: popupTemplate
+                        // });
+                        // view.graphics.add(pointGraphic);
+                        paths.push([feature.attributes.LONGITUDE, feature.attributes.LATITUDE]);
+                    });
+                    const polyline = {
+                        type: "polyline",
+                        paths: paths
+                    };
+                    const simpleLineSymbol = {
+                        type: "simple-line",
+                        color: [226, 119, 40], // Orange
+                        width: 1
+                    };
+                    const popupTemplate = {
+                        title: "Segment",
+                        content: `County: ${entry.county} <br> ID_PREFIX: ${entry.route_type} <br> ROUTE_NO: ${entry.route_number} <br> Mile Point Start :${entry.from_milepoint} <br> Mile Point End :${entry.to_milepoint} `
+                    };
+                    const polylineGraphic = new Graphic({
+                        geometry: polyline,
+                        symbol: simpleLineSymbol,
+                        popupTemplate: popupTemplate
+
+                    });
+                    view.graphics.add(polylineGraphic);
+                    view.goTo(view.graphics, {zoom: 12});
+                  await delay(500);
+                }
+
+            }
+
+            async function querySegment(extent) {
+                const parcelQuery = {
+                    where: countySelect.value + ' and ' + routeSelect.value + ' and ' + routeIDSelect.value + ' and ID_MP >='
+                        + milePointStartInput.value + ' and ID_MP <=' + milePointEndInput.value + ' and MAIN_LINE = 1 and (MP_DIRECTION = \'E\' or MP_DIRECTION = \'N\' or MP_DIRECTION = null)',
+                    spatialRelationship: "intersects", // Relationship operation to apply
+                    // geometry: extent, // Restricted to visible extent of the map
+                    outFields: ["*"], // Attributes to return
+                    returnGeometry: true,
+                };
+                const results = await parcelLayer.queryFeatures(parcelQuery)
+
+                displayResults(results,true);
+                // results.features.forEach(function (feature) {
+                //   let option = document.createElement("option");
+                //   option.innerHTML = feature.attributes.ROAD_NAME;
+                //   option.value = 'ROAD_NAME=' + feature.attributes.ROAD_NAME;
+                //   routeIDSelect.appendChild(option);
+                // });
+                // console.log(results);
+            }
+
+            function displayResults(results,isGraphicToBeCleared) {
+                //Create a blue polygon
+                isGraphicToBeCleared && view.graphics.removeAll();
+                paths = [];
+                results.features.forEach((feature) => {
+                    // console.log(feature.attributes.LATITUDE, feature.attributes.LONGITUDE);
+                    // const point = {
+                    //     type: "point", // autocasts as new Point()
+                    //     longitude: feature.attributes.LONGITUDE,
+                    //     latitude: feature.attributes.LATITUDE
+                    // };
+                    // //
+                    // // // Create a symbol for drawing the point
+                    // const markerSymbol = {
+                    //     type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                    //     color: [226, 119, 40],
+                    //     outline: {
+                    //         // autocasts as new SimpleLineSymbol()
+                    //         color: [136, 8, 8],
+                    //         width: 2
+                    //     }
+                    // };
+                    // const popupTemplate = {
+                    //     title: "RoadName {feature.attributes.ROAD_NAME}",
+                    //     content: `County: ${feature.attributes.COUNTY} <br> ID_PREFIX: ${feature.attributes.ID_PREFIX} <br> ROUTE_NO: ${feature.attributes.ID_RTE_NO} <br> Mile Point :${feature.attributes.ID_MP} `
+                    // };
+                    // // // Create a graphic and add the geometry and symbol to it
+                    // const pointGraphic = new Graphic({
+                    //     geometry: point,
+                    //     symbol: markerSymbol,
+                    //     popupTemplate: popupTemplate
+                    // });
+                    // view.graphics.add(pointGraphic);
+                    paths.push([feature.attributes.LONGITUDE, feature.attributes.LATITUDE]);
+                });
+                console.log(paths);
+                const polyline = {
+                    type: "polyline",
+                    paths: paths
+                };
+                const simpleLineSymbol = {
+                    type: "simple-line",
+                    color: [226, 119, 40], // Orange
+                    width: 2
+                };
+                const popupTemplate = {
+                    title: "Segment",
+                    content: `County: ${countySelect.value} <br> ID_PREFIX: ${routeIDSelect.value} <br> ROUTE_NO: ${routeSelect.value} <br> Mile Point Start :${milePointStartInput.value} <br> Mile Point End :${milePointEndInput.value} `
+                };
+                const polylineGraphic = new Graphic({
+                    geometry: polyline,
+                    symbol: simpleLineSymbol,
+                    popupTemplate: popupTemplate
+
+                });
+                view.graphics.add(polylineGraphic);
+                view.goTo(view.graphics, {zoom: 12});
+
+
+                //  const symbol = {
+                //    type: "simple-fill",
+                //    color: [20, 130, 200, 0.5],
+                //    outline: {
+                //      color: "white",
+                //      width: .5
+                //    },
+                //  };
+                //
+                //  const popupTemplate = {
+                //    title: "Parcel {ROAD_NAME}",
+                //    content: "County: {COUNTY} <br> ID_PREFIX: {ID_PREFIX} <br> ROAD_NAME: {ROAD_NAME}"
+                //  };
+                //
+                //  // Assign styles and popup to features
+                //  results.features.map((feature) => {
+                //    feature.symbol = symbol;
+                //    feature.popupTemplate = popupTemplate;
+                //    return feature;
+                //  });
+                //
+                // // Clear display
+                //  view.popup.close();
+                //  view.graphics.removeAll();
+                //  // Add features to graphics layer
+                //  view.graphics.addMany(results.features);
+            }
         });
-        console.log(paths);
-        const polyline = {
-          type: "polyline",
-          paths: paths
-        };
-        const simpleLineSymbol = {
-          type: "simple-line",
-          color: [226, 119, 40], // Orange
-          width: 2
-        };
-        const popupTemplate = {
-          title: "Segment",
-          content: `County: ${countySelect.value} <br> ID_PREFIX: ${routeIDSelect.value} <br> ROUTE_NO: ${routeSelect.value} <br> Mile Point Start :${milePointStartInput.value} <br> Mile Point End :${milePointEndInput.value} `
-        };
-        const polylineGraphic = new Graphic({
-          geometry: polyline,
-          symbol: simpleLineSymbol,
-          popupTemplate: popupTemplate
-
-        });
-        view.graphics.add(polylineGraphic);
-        view.goTo(view.graphics,{zoom : 12});
 
 
-        //  const symbol = {
-        //    type: "simple-fill",
-        //    color: [20, 130, 200, 0.5],
-        //    outline: {
-        //      color: "white",
-        //      width: .5
-        //    },
-        //  };
-        //
-        //  const popupTemplate = {
-        //    title: "Parcel {ROAD_NAME}",
-        //    content: "County: {COUNTY} <br> ID_PREFIX: {ID_PREFIX} <br> ROAD_NAME: {ROAD_NAME}"
-        //  };
-        //
-        //  // Assign styles and popup to features
-        //  results.features.map((feature) => {
-        //    feature.symbol = symbol;
-        //    feature.popupTemplate = popupTemplate;
-        //    return feature;
-        //  });
-        //
-        // // Clear display
-        //  view.popup.close();
-        //  view.graphics.removeAll();
-        //  // Add features to graphics layer
-        //  view.graphics.addMany(results.features);
-      }
-    });
-
-
-
-
-
-
-  </script>
+    </script>
 </head>
 <body>
 <div id="viewDiv"></div>
